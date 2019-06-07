@@ -1,0 +1,94 @@
+body {
+  font-family: Arial, sans-serif;
+  font-size: 1.1rem;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: black;
+}
+
+header {
+  color: white;
+  background-color: #f90;
+}
+
+header, footer {
+  padding: 12px;
+}
+
+footer {
+  border-top: solid 1px #999;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2 {
+  display: inline-block;
+  vertical-align: bottom;
+  font-weight: bold;
+}
+
+h1 {
+  font-size: 1.2rem;
+}
+
+h2 {
+  font-size: .8rem;
+  margin: 2px 8px;
+}
+
+ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li.song {
+  position: relative;
+  padding: 12px;
+}
+
+li.playing {
+  background-color: #eee;
+}
+
+li.song:hover {
+  background-color: #eee;
+}
+
+h3 {
+  font-size: 2.4rem;
+  font-weight: normal;
+}
+
+h3 a {
+  text-decoration: none;
+}
+
+li.song p {
+  color: #999;
+}
+
+li.song .length {
+  color: black;
+  font-weight: bold;
+}
+
+li.song .progress {
+  float: right;
+  height: 12px;
+  width: 100px;
+  margin: 24px;
+}
+
+li.song .progress > div {
+  background-color: #ddd;
+  height: 100%;
+  width: 0%;
+}
+

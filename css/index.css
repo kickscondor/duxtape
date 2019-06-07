@@ -1,0 +1,51 @@
+body {
+  font-family: Arial, sans-serif;
+  font-size: 1.1rem;
+  margin: 20px;
+  padding: 0;
+}
+
+header > div {
+  float: left;
+  width: 50%;
+}
+
+header:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+#tapeimg img {
+  max-width: 80%;
+  margin: 40px;
+}
+
+#titles h1 {
+  font-size: 6rem;
+  font-weight: bold;
+  margin: 30px 0;
+}
+
+#titles ul {
+  list-style: none;
+  font-size: 2rem;
+  padding: 0;
+  margin: 0;
+  color: #999;
+}
+
+#titles li {
+  padding-left: 2rem;
+  text-indent: -.7em;
+}
+
+#titles li a {
+  font-weight: bold;
+  color: black;
+}
+
+#titles li::before {
+  content: "\02bc0\0000a0";
+  color: #999;
+}
