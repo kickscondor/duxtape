@@ -42,6 +42,11 @@ h2 {
   margin: 2px 8px;
 }
 
+header .pickr {
+  border: solid 1px white;
+  margin-top: -3px;
+}
+
 ol {
   list-style: none;
   padding: 0;
@@ -51,6 +56,7 @@ ol {
 li.song {
   position: relative;
   padding: 12px;
+  user-select: none;
 }
 
 li.playing {
@@ -64,6 +70,7 @@ li.song:hover {
 h3 {
   font-size: 2.4rem;
   font-weight: normal;
+  margin-right: 160px;
 }
 
 h3 a {
@@ -81,6 +88,7 @@ li.song .length {
 
 li.song .progress {
   float: right;
+  background-color: white;
   height: 12px;
   width: 100px;
   margin: 24px;
@@ -92,3 +100,35 @@ li.song .progress > div {
   width: 0%;
 }
 
+main iframe {
+  width: 0;
+  height: 0;
+}
+
+/* editor css */
+header .editor {
+  float: right;
+}
+
+main .editor {
+  background-color: #999;
+  color: white;
+  padding: 20px;
+}
+
+.editing {
+  border-bottom: solid 1px white;
+}
+
+[contenteditable="true"].editing {
+  white-space: nowrap;
+} 
+
+[contenteditable="true"].editing br {
+  display:none;
+}
+
+[contenteditable="true"].editing * {
+  display:inline;
+  white-space:nowrap;
+}

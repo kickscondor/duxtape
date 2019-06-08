@@ -72,6 +72,86 @@ function onPlayProgress(e) {
   u('.progress > div', playing).attr('style', 'width: ' + Math.floor(percent) + '%')
 }
 
+function addScript(src, fn) {
+  let s = document.createElement("script")
+  s.src = src
+  s.className = "editor"
+  if (fn) s.onload = fn
+  document.head.appendChild(s)
+  return s
+}
+
+/* From https://stackoverflow.com/questions/10588607/tutorial-for-html5-dragdrop-sortable-list */
+var _el
+
+function getListItem(ele) {
+  let li = u(ele).closest('li').first()
+  return li ? li : ele
+}
+
+function dragOver(e) {
+  let li = getListItem(e.target)
+  let index = isBefore(_el, li)
+  if (index > 0)
+    li.parentNode.insertBefore(_el, li)
+  else if (index < 0)
+    li.parentNode.insertBefore(_el, li.nextSibling)
+}
+
+function dragStart(e) {
+  e.dataTransfer.effectAllowed = "move"
+  e.dataTransfer.setData("text/plain", null) // Thanks to bqlou for their comment.
+  _el = getListItem(e.target)
+}
+
+function isBefore(el1, el2) {
+  if (typeof el1 === 'undefined' || typeof el2 === 'undefined')
+    return 0
+  if (el2.parentNode === el1.parentNode)
+    for (var cur = el1.previousSibling; cur && cur.nodeType !== 9; cur = cur.previousSibling)
+      if (cur === el2)
+        return 1;
+  return -1;
+}
+
+function colorPicker(sel, cls, col, fn) {
+  let pickr = new Pickr({el: sel, appClass: cls, default: col,
+    swatches: [
+      'rgb(244, 67, 54)',
+      'rgb(233, 30, 99)',
+      'rgb(156, 39, 176)',
+      'rgb(103, 58, 183)',
+      'rgb(63, 81, 181)',
+      'rgb(33, 150, 243)',
+      'rgb(3, 169, 244)',
+      'rgb(0, 188, 212)',
+      'rgb(0, 150, 136)',
+      'rgb(76, 175, 80)',
+      'rgb(139, 195, 74)',
+      'rgb(205, 220, 57)',
+      'rgb(255, 235, 59)',
+      'rgb(255, 193, 7)'
+    ],
+
+    components: {
+      preview: true,
+      hue: true,
+      opacity: false,
+
+      interaction: {
+        hex: true,
+        input: true,
+        save: true,
+        clear: true
+      }
+    }
+  })
+  pickr.on('save', (c) => {
+    fn(c.toRGBA().toString())
+  })
+  return pickr
+}
+
 (async function () {
   let archive = new DatArchive(window.location)
  
@@ -89,6 +169,19 @@ function onPlayProgress(e) {
     } catch (e) {
     }
     await dat.writeFile(path, str)
+  }
+
+  async function writeIndexHTML() {
+    let doc = u(document.documentElement).clone()
+    doc.find('.editor').remove()
+    doc.find('.editing').removeClass('editing').
+      each((node, i) => node.removeAttribute('contenteditable'))
+    await forceWrite(archive, '/index.html', doc.html())
+  }
+
+  async function dragEnd(e) {
+    _el = null
+    writeIndexHTML()
   }
 
   async function readFiles(files) {
@@ -114,6 +207,7 @@ function onPlayProgress(e) {
             if (meta.common.artist && meta.common.title)
               title = meta.common.artist + ' - ' + meta.common.title
             let link = u('<a>').attr('href', path).text(title)
+            let song = u('<li class="song" draggable="true">')
             let h3 = u('<h3>').append(link)
             let p = u('<p><span class="length">' +
                 songDuration(meta.format.duration) + '</span>&nbsp;')
@@ -124,14 +218,17 @@ function onPlayProgress(e) {
                 append(u('<span class="year">').text(meta.common.year)).
                 append(')')
             }
-            u('main > ol').append(u('<li class="song">').append(h3).append(p))
+            u('main > ol').append(song.append(h3).append(p))
 
             // Handle playing songs.
             link.on('click', onPlay)
+            song.on('dragover', dragOver)
+            song.on('dragstart', dragStart)
+            song.on('dragend', dragEnd)
 
             // Write the HTML to the Dat.
             updateTape(1, meta.format.duration)
-            await forceWrite(archive, '/index.html', document.documentElement.innerHTML)
+            writeIndexHTML()
           }
 
           reader.readAsArrayBuffer(file)
@@ -141,6 +238,9 @@ function onPlayProgress(e) {
   }
 
   ready(async function () {
+    u('h3 a').on('click', onPlay)
+
+    let duxHome = u('link[rel="stylesheet"]').attr('href').split('/css/')[0]
     let archiveInfo = await archive.getInfo()
     let h1 = document.querySelector('h1')
     if (h1.innerText == "MUXTAPE by SOMEONE") {
@@ -149,14 +249,46 @@ function onPlayProgress(e) {
 
     // Add editor controls, if this person owns the tape.
     if (archiveInfo.isOwner) {
+      u('head').append(u('<link>').attr(
+        {rel: 'stylesheet', type: 'text/css', href: duxHome + '/css/pickr.css', class: 'editor'}))
+      u('header').prepend(u('<div class="editor"><div class="color-picker">'))
+      let tapestyle = u('header').attr('style'), bgcolor = "#F90"
+      if (tapestyle)
+        bgcolor = tapestyle.match(/background-color:\s*([^;]+)/)[1]
+      addScript(duxHome + '/js/pickr.es5.min.js',
+        e => colorPicker('.color-picker', 'editor', bgcolor, c => {
+          u('header').attr('style', 'background-color: ' + c)
+          writeIndexHTML()
+        }))
+
       document.addEventListener('dragover', ev => ev.preventDefault())
       document.addEventListener('drop', ev => {
         ev.preventDefault()
         readFiles(ev.dataTransfer.files)
       })
-    }
 
-    u('h3 a').on('click', onPlay)
+      let timer = null
+      u('h1 > span').attr('contenteditable', 'true').addClass('editing').
+        on('blur keyup paste input', e => {
+          if (timer) clearTimeout(timer)
+          timer = setTimeout(_ => {
+            u('h1 > span').each((node, i) => {
+              if (node.innerText.length === 0)
+                node.innerText = "???"
+            })
+            writeIndexHTML()
+          }, 700)
+        })
+      u('main li.song').on('dragover', dragOver).
+        on('dragstart', dragStart).on('dragend', dragEnd)
+      u('main').append('<div class="editor file-form"><p>How to create your duxtape:</p>' +
+        '<ul><li>Drop music files onto this page.</li><li>You can drag songs up and down ' +
+        'to order them.</li><li>Style the page by editing the title and color above.</li></ul>' +
+        "<p>That's it! Share and seed your tape with others.</p>")
+    } else {
+      u('main').append(u('<iframe>').attr('src', duxHome + '/?add=' +
+       encodeURIComponent(archive.url)))
+    }
 
     let player = document.getElementById('player')
     player.addEventListener('ended', onPlayNext)
