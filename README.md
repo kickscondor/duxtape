@@ -1,11 +1,14 @@
+
 This is a Muxtape clone for the Dat network. You'll need
 [Beaker](https://beakerbrowser.com/) to listen to tapes, create tapes.
 Mere nostalgia, let's say.
 
+![Screenshot](/duxtape.png)
+
 To try it out, visit dat://duxtape.kickscondor.com/.
 
 If you don't know what Muxtape was, it was a short-lived website for sharing
-mp3 mix tapes. It's design was absolutely bare: just the songs you uploaded.
+mp3 mix tapes. Its design was absolutely bare: just the songs you uploaded.
 But it functioned. You could create and listen to mixtapes in the browser.
 It was shuttered within the year and made an attempt to return... don't recall
 what happened next.
