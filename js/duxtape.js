@@ -153,7 +153,7 @@ function colorPicker(sel, cls, col, fn) {
 }
 
 (async function () {
-  let archive = new DatArchive(window.location)
+  let archive = new DatArchive(window.location), newFiles = []
  
   async function addWrite(dat, path, str) {
     try {
@@ -171,7 +171,13 @@ function colorPicker(sel, cls, col, fn) {
     await dat.writeFile(path, str)
   }
 
-  async function writeIndexHTML() {
+  async function writeAllChanges() {
+    while (newFiles.length > 0) {
+      let nf = newFiles.pop()
+      console.log(nf)
+      await addWrite(archive, nf.path, nf.data)
+    }
+
     let doc = u(document.documentElement).clone()
     doc.find('.editor').remove()
     doc.find('.editing').removeClass('editing').
@@ -179,9 +185,13 @@ function colorPicker(sel, cls, col, fn) {
     await forceWrite(archive, '/index.html', doc.html())
   }
 
+  async function markToPublish() {
+    document.getElementById("publish").disabled = false
+  }
+
   async function dragEnd(e) {
     _el = null
-    writeIndexHTML()
+    markToPublish()
   }
 
   async function readFiles(files) {
@@ -196,12 +206,7 @@ function colorPicker(sel, cls, col, fn) {
         mm.parseBlob(file, {duration: true}).then(meta => {
           let path = '/' + file.name
           let reader = new FileReader()
-
-          reader.onload = async function () {
-            // Add the music file to the dat.
-            // TODO: preview = archive.checkout('preview')
-            await addWrite(archive, path, reader.result)
-
+          reader.addEventListener('load', async function (ev) {
             // Create the entry in the playlist.
             let title = file.name
             if (meta.common.artist && meta.common.title)
@@ -219,6 +224,7 @@ function colorPicker(sel, cls, col, fn) {
                 append(')')
             }
             u('main > ol').append(song.append(h3).append(p))
+            updateTape(1, meta.format.duration)
 
             // Handle playing songs.
             link.on('click', onPlay)
@@ -226,11 +232,9 @@ function colorPicker(sel, cls, col, fn) {
             song.on('dragstart', dragStart)
             song.on('dragend', dragEnd)
 
-            // Write the HTML to the Dat.
-            updateTape(1, meta.format.duration)
-            writeIndexHTML()
-          }
-
+            newFiles.push({path: path, data: reader.result})
+            markToPublish()
+          })
           reader.readAsArrayBuffer(file)
         })
       }
@@ -258,7 +262,7 @@ function colorPicker(sel, cls, col, fn) {
       addScript(duxHome + '/js/pickr.es5.min.js',
         e => colorPicker('.color-picker', 'editor', bgcolor, c => {
           u('header').attr('style', 'background-color: ' + c)
-          writeIndexHTML()
+          markToPublish()
         }))
 
       document.addEventListener('dragover', ev => ev.preventDefault())
@@ -270,21 +274,48 @@ function colorPicker(sel, cls, col, fn) {
       let timer = null
       u('h1 > span').attr('contenteditable', 'true').addClass('editing').
         on('blur keyup paste input', e => {
+          markToPublish()
           if (timer) clearTimeout(timer)
           timer = setTimeout(_ => {
             u('h1 > span').each((node, i) => {
               if (node.innerText.length === 0)
                 node.innerText = "???"
             })
-            writeIndexHTML()
           }, 700)
         })
       u('main li.song').on('dragover', dragOver).
         on('dragstart', dragStart).on('dragend', dragEnd)
-      u('main').append('<div class="editor file-form"><p>How to create your duxtape:</p>' +
-        '<ul><li>Drop music files onto this page.</li><li>You can drag songs up and down ' +
-        'to order them.</li><li>Style the page by editing the title and color above.</li></ul>' +
-        "<p>That's it! Share and seed your tape with others.</p>")
+      u('main').append('<div class="editor file-form">' + 
+        '<button id="publish" type="button" disabled>Publish</button>' +
+        '<p>How to create your duxtape:</p>' +
+        '<ul><li>Drop music files onto this page or use this: ' +
+        '<input type="file" id="musicfile" name="musicfile" accept="audio/*" multiple="multiple">' +
+        '</li><li>You can drag songs up and down ' +
+        'to order them.</li><li>Style the page by editing the title and color above.</li>' +
+        '<li>A <strong>Publish</strong> button will appear to the right&mdash;click that to save your changes.</li></ul>' +
+        "<p>That's it! Share and seed your tape with others.</p>" +
+        '<div id="publishing"><p>PUBLISHING</p><img src="' + duxHome + '/images/ripple.svg"></div>')
+
+      let publish = document.getElementById('publish')
+      u(publish).on('click', async function (ev) {
+        u("#publishing").attr('style', 'display: block')
+        await writeAllChanges()
+        publish.disabled = true
+        u("#publishing").attr('style', 'display: none')
+      })
+      let musicfile = u('#musicfile')
+      musicfile.on('change', async function (ev) {
+        let f = musicfile.first()
+        await readFiles(f.files)
+        f.value = ''
+      })
+      window.addEventListener('beforeunload', function (ev) {
+        if (!publish.disabled) {
+          var message = "You have unpublished changes. You sure you want to leave?"
+          ev.returnValue = message
+          return message
+        }
+      })
     } else {
       u('main').append(u('<iframe>').attr('src', duxHome + '/?add=' +
        encodeURIComponent(archive.url)))

@@ -8,6 +8,15 @@
     window.localStorage.setItem('duxtapes', JSON.stringify(duxtapes))
   }
 
+  function discoverTape(addurl) {
+    if (addurl.startsWith('dat://') && !duxtapes.discovered.includes(addurl)
+      && !duxtapes.favorites.includes(addurl))
+        duxtapes.discovered.push(addurl)
+  }
+
+  // Default starter tapes
+  discoverTape("dat://8587f38ad142911bbf29caffe6887080be3c3ff55569be03bacc197c5daa9caa")
+
   async function onCreateTape (e) {
     e.preventDefault()
     e.stopPropagation()
@@ -36,9 +45,7 @@
     let add = window.location.search.match(/add=dat[^&]+/g)
     if (add) {
       for (let i = 0; i < add.length; i++) {
-        let addurl = decodeURIComponent(add[i].slice(4))
-        if (addurl.startsWith('dat://') && !duxtapes.discovered.includes(addurl))
-          duxtapes.discovered.push(addurl)
+        discoverTape(decodeURIComponent(add[i].slice(4)))
       }
       window.localStorage.setItem('duxtapes', JSON.stringify(duxtapes))
     } else {
