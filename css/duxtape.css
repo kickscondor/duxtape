@@ -110,13 +110,22 @@ header .editor {
   float: right;
 }
 
-main .editor {
+main .file-form {
   background-color: #999;
   color: white;
   padding: 20px;
 }
 
-.editing {
+li.song a.editor {
+  margin-left: 12px;
+  text-decoration: none;
+}
+
+li.song a.editor span {
+  text-decoration: underline;
+}
+
+header .editing {
   border-bottom: solid 1px white;
 }
 

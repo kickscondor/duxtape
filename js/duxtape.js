@@ -1,3 +1,6 @@
+//
+// Helper functions
+//
 function pad(n, width, z) {
   z = z || '0';
   n = n + '';
@@ -17,6 +20,15 @@ function parseDuration(str) {
   return duration
 }
 
+function listenForEnter(u) {
+  return u.on('keydown', ev => {
+    if (ev.keyCode === 13 || ev.keyCode === 27) {
+      ev.currentTarget.blur()
+      return false
+    }
+  })
+}
+
 function updateTape(songs, duration) {
   let h2 = document.querySelector('h2')
   let lenEle = h2.querySelector('.tape-length')
@@ -28,7 +40,8 @@ function updateTape(songs, duration) {
 function playMusic(link) {
   // Start audio player.
   let player = document.getElementById('player')
-  player.src = link.href
+  player.src = link.newFile ?
+    window.URL.createObjectURL(link.newFile) : link.href
   player.play()
 
   // Turn on visual style on the song.
@@ -53,7 +66,7 @@ function onPlay(e) {
   e.stopPropagation()
   var lastItem = stopMusic()
   var lastLink = lastItem.find('h3 a').first()
-  if (lastLink !== e.currentTarget)
+  if (lastLink !== e.currentTarget && e.currentTarget.className !== "editing")
     playMusic(e.currentTarget)
 }
 
@@ -81,6 +94,14 @@ function addScript(src, fn) {
   return s
 }
 
+function selectEle(ele) {
+  let range = document.createRange()
+  range.selectNodeContents(ele)
+  let sel = window.getSelection()
+  sel.removeAllRanges()
+  sel.addRange(range)
+}
+
 /* From https://stackoverflow.com/questions/10588607/tutorial-for-html5-dragdrop-sortable-list */
 var _el
 
@@ -89,23 +110,18 @@ function getListItem(ele) {
   return li ? li : ele
 }
 
-function dragOver(e) {
-  let li = getListItem(e.target)
-  let index = isBefore(_el, li)
-  if (index > 0)
-    li.parentNode.insertBefore(_el, li)
-  else if (index < 0)
-    li.parentNode.insertBefore(_el, li.nextSibling)
-}
-
 function dragStart(e) {
   e.dataTransfer.effectAllowed = "move"
   e.dataTransfer.setData("text/plain", null) // Thanks to bqlou for their comment.
   _el = getListItem(e.target)
 }
 
+function dragEnd(e) {
+  _el = null
+}
+
 function isBefore(el1, el2) {
-  if (typeof el1 === 'undefined' || typeof el2 === 'undefined')
+  if (!el1 || !el2)
     return 0
   if (el2.parentNode === el1.parentNode)
     for (var cur = el1.previousSibling; cur && cur.nodeType !== 9; cur = cur.previousSibling)
@@ -152,8 +168,12 @@ function colorPicker(sel, cls, col, fn) {
   return pickr
 }
 
+//
+// Actual logic for this app starts here.
+//
 (async function () {
-  let archive = new DatArchive(window.location), newFiles = []
+  let archive = new DatArchive(window.location),
+    newFiles = [], delFiles = []
  
   async function addWrite(dat, path, str) {
     try {
@@ -171,14 +191,30 @@ function colorPicker(sel, cls, col, fn) {
     await dat.writeFile(path, str)
   }
 
+  async function forceDelete(dat, path) {
+    try {
+      await dat.unlink(path)
+    } catch (e) {
+    }
+  }
+
+  // All songs and metadata are written to the Dat.
   async function writeAllChanges() {
+    while (delFiles.length > 0) {
+      await forceDelete(archive, delFiles.pop())
+    }
+
     while (newFiles.length > 0) {
       let nf = newFiles.pop()
-      console.log(nf)
       await addWrite(archive, nf.path, nf.data)
     }
 
     let doc = u(document.documentElement).clone()
+    let newTitle = doc.find('.tape-title').text()
+    let info = await archive.getInfo()
+    if (info.title !== newTitle)
+      archive.configure({title: newTitle})
+
     doc.find('.editor').remove()
     doc.find('.editing').removeClass('editing').
       each((node, i) => node.removeAttribute('contenteditable'))
@@ -189,12 +225,55 @@ function colorPicker(sel, cls, col, fn) {
     document.getElementById("publish").disabled = false
   }
 
-  async function dragEnd(e) {
-    _el = null
+  async function dragOver(e) {
+    let li = getListItem(e.target)
+    let index = isBefore(_el, li)
+    if (index == 0)
+      return
+    li.parentNode.insertBefore(_el, index > 0 ? li : li.nextSibling)
     markToPublish()
   }
 
-  async function readFiles(files) {
+  async function addSongEdit(duxHome, li) {
+    // Song rename button
+    let ren = u('<a href="#" class="editor rename"><img src="' + duxHome + '/images/270f.png"></a>')
+    ren.on('click', ev => {
+      let title = u(ev.currentTarget.previousElementSibling)
+      selectEle(title.attr('contenteditable', 'true').addClass('editing').first())
+    })
+    listenForEnter(li.find('h3 a')).
+      on('blur', ev => {
+        let a = ev.currentTarget
+        if (a.className == 'editing') {
+          a.removeAttribute('contenteditable')
+          a.removeAttribute('class')
+          markToPublish()
+        }
+      })
+    li.find('h3').append(ren)
+
+    // Song delete button
+    let del = u('<a href="#" class="editor delete">&#x1f525; <span>Delete</span></a>')
+    del.on('click', ev => {
+      let l = u(ev.currentTarget).closest('li')
+      let a = l.find('h3 a')
+      if (confirm('You really want to delete "' + a.text() + '"?')) {
+        l.remove()
+        let path = a.attr('href')
+        for (let i = 0; i < newFiles.length; i++) {
+          if (newFiles[i].path == path) {
+            newFiles.splice(i, 1)
+            break
+          }
+        }
+        delFiles.push(path)
+        markToPublish()
+      }
+    })
+    li.find('p').append(del)
+  }
+
+  async function readFiles(duxHome, files) {
     let mm = require('music-metadata-browser')
     let count = files.length
     if (count > 0) {
@@ -224,6 +303,7 @@ function colorPicker(sel, cls, col, fn) {
                 append(')')
             }
             u('main > ol').append(song.append(h3).append(p))
+            addSongEdit(duxHome, song)
             updateTape(1, meta.format.duration)
 
             // Handle playing songs.
@@ -232,6 +312,7 @@ function colorPicker(sel, cls, col, fn) {
             song.on('dragstart', dragStart)
             song.on('dragend', dragEnd)
 
+            link.first().newFile = file
             newFiles.push({path: path, data: reader.result})
             markToPublish()
           })
@@ -253,6 +334,7 @@ function colorPicker(sel, cls, col, fn) {
 
     // Add editor controls, if this person owns the tape.
     if (archiveInfo.isOwner) {
+      addSongEdit(duxHome, u('li.song'))
       u('head').append(u('<link>').attr(
         {rel: 'stylesheet', type: 'text/css', href: duxHome + '/css/pickr.css', class: 'editor'}))
       u('header').prepend(u('<div class="editor"><div class="color-picker">'))
@@ -268,11 +350,12 @@ function colorPicker(sel, cls, col, fn) {
       document.addEventListener('dragover', ev => ev.preventDefault())
       document.addEventListener('drop', ev => {
         ev.preventDefault()
-        readFiles(ev.dataTransfer.files)
+        readFiles(duxHome, ev.dataTransfer.files)
       })
 
+      // Title and author name edits.
       let timer = null
-      u('h1 > span').attr('contenteditable', 'true').addClass('editing').
+      listenForEnter(u('h1 > span').attr('contenteditable', 'true')).addClass('editing').
         on('blur keyup paste input', e => {
           markToPublish()
           if (timer) clearTimeout(timer)
@@ -283,6 +366,8 @@ function colorPicker(sel, cls, col, fn) {
             })
           }, 700)
         })
+
+      // Add the instruction pane.
       u('main li.song').on('dragover', dragOver).
         on('dragstart', dragStart).on('dragend', dragEnd)
       u('main').append('<div class="editor file-form">' + 
@@ -296,6 +381,7 @@ function colorPicker(sel, cls, col, fn) {
         "<p>That's it! Share and seed your tape with others.</p>" +
         '<div id="publishing"><p>PUBLISHING</p><img src="' + duxHome + '/images/ripple.svg"></div>')
 
+      // Publishing and uploading buttons in the instruction pane.
       let publish = document.getElementById('publish')
       u(publish).on('click', async function (ev) {
         u("#publishing").attr('style', 'display: block')
@@ -306,7 +392,7 @@ function colorPicker(sel, cls, col, fn) {
       let musicfile = u('#musicfile')
       musicfile.on('change', async function (ev) {
         let f = musicfile.first()
-        await readFiles(f.files)
+        await readFiles(duxHome, f.files)
         f.value = ''
       })
       window.addEventListener('beforeunload', function (ev) {
@@ -317,6 +403,7 @@ function colorPicker(sel, cls, col, fn) {
         }
       })
     } else {
+      // If viewing this tape as a visitor, put it in the 'discovered' list.
       u('main').append(u('<iframe>').attr('src', duxHome + '/?add=' +
        encodeURIComponent(archive.url)))
     }
