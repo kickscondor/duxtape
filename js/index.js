@@ -62,17 +62,20 @@
   }
 
   async function displayTapes(cat) {
-    let ol = u('ol.' + cat).empty()
+    let ol = u('ol.' + cat)
     for (let i = 0; i < duxtapes[cat].length; i++) {
-      let dat = new DatArchive(duxtapes[cat][i])
-      let html = await dat.readFile('/index.html')
-      let doc = u('<div>').html(html)
-      let item = u('<li>')
-      let tapestyle = doc.find('header').attr('style')
-      if (tapestyle)
-        item.attr('style', tapestyle)
-      ol.append(item.append(u('<a>').
-        attr('href', dat.url).append(doc.find('h1').text())))
+      let url = duxtapes[cat][i]
+      if (ol.find('a[href="' + url + '"]').length == 0) {
+        let dat = new DatArchive(url)
+        let html = await dat.readFile('/index.html')
+        let doc = u('<div>').html(html)
+        let item = u('<li>')
+        let tapestyle = doc.find('header').attr('style')
+        if (tapestyle)
+          item.attr('style', tapestyle)
+        ol.append(item.append(u('<a>').
+          attr('href', url).append(doc.find('h1').text())))
+      }
     }
   }
 
