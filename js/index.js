@@ -31,16 +31,18 @@
   addTapes("discovered", ["dat://8587f38ad142911bbf29caffe6887080be3c3ff55569be03bacc197c5daa9caa"])
 
   // Advertise my tapes to connected peers.
-  experimental.datPeers.broadcast({tapes: Object.keys(allTapes)})
-  experimental.datPeers.addEventListener('connect', ({peer}) => {
-    peer.send({tapes: Object.keys(allTapes)})
-  })
-  experimental.datPeers.addEventListener('message', ({peer, message}) => {
-    if (message && message.tapes && message.tapes.length > 0) {
-      addTapes('discovered', message.tapes)
-      displayTapes('discovered')
-    }
-  })
+  if (experimental) {
+    experimental.datPeers.broadcast({tapes: Object.keys(allTapes)})
+    experimental.datPeers.addEventListener('connect', ({peer}) => {
+      peer.send({tapes: Object.keys(allTapes)})
+    })
+    experimental.datPeers.addEventListener('message', ({peer, message}) => {
+      if (message && message.tapes && message.tapes.length > 0) {
+        addTapes('discovered', message.tapes)
+        displayTapes('discovered')
+      }
+    })
+  }
 
   async function onCreateTape (e) {
     e.preventDefault()
