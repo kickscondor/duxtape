@@ -185,7 +185,7 @@ function colorPicker(sel, cls, col, fn) {
 
   async function forceWrite(dat, path, str) {
     try {
-      await dat.rmdir(path)
+      await dat.unlink(path)
     } catch (e) {
     }
     await dat.writeFile(path, str)
