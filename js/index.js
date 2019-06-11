@@ -36,6 +36,7 @@
     let lst = duxtapes[cat]
     let idx = lst.indexOf(url)
     if (idx > -1) lst.splice(idx, 1)
+    delete allTapes[url]
     saveTapes()
   }
 
@@ -103,6 +104,7 @@
             u('ol.' + moveTo).prepend(c.closest('li').remove())
             duxtapes[moveTo].push(url)
             removeTape(moveFrom, url)
+            allTapes[url] = (moveTo === 'favorites')
           })
         })
       }
