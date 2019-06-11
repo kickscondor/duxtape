@@ -17,18 +17,27 @@
     return true
   }
   ['discovered', 'favorites'].forEach(cat => duxtapes[cat].filter(url => checkTape(cat, url)))
+  duxtapes.discovered = duxtapes.discovered.slice(-40)
   saveTapes()
 
   function addTapes(cat, urls) {
+    ary = []
     urls.forEach(addurl => {
-      if (addurl.startsWith('dat://') && checkTape(cat, addurl))
+      if (addurl.startsWith('dat://') && checkTape(cat, addurl)) {
         duxtapes[cat].push(addurl)
+        ary.push(addurl)
+      }
     })
     saveTapes()
+    return ary
   }
 
-  // Default starter tapes.
-  addTapes("discovered", ["dat://8587f38ad142911bbf29caffe6887080be3c3ff55569be03bacc197c5daa9caa"])
+  function removeTape(cat, url) {
+    let lst = duxtapes[cat]
+    let idx = lst.indexOf(url)
+    if (idx > -1) lst.splice(idx, 1)
+    saveTapes()
+  }
 
   // Advertise my tapes to connected peers.
   if (experimental) {
@@ -38,8 +47,7 @@
     })
     experimental.datPeers.addEventListener('message', ({peer, message}) => {
       if (message && message.tapes && message.tapes.length > 0) {
-        addTapes('discovered', message.tapes)
-        displayTapes('discovered')
+        displayTapes('discovered', addTapes('discovered', message.tapes), true)
       }
     })
   }
@@ -63,20 +71,40 @@
     window.location = tape.url
   }
 
-  async function displayTapes(cat) {
+  async function displayTapes(cat, ary, checkAccess) {
     let ol = u('ol.' + cat)
-    for (let i = 0; i < duxtapes[cat].length; i++) {
-      let url = duxtapes[cat][i]
+    let i = ary.length
+    while (i--) {
+      let url = ary[i]
       if (ol.find('a[href="' + url + '"]').length == 0) {
         let dat = new DatArchive(url)
-        let html = await dat.readFile('/index.html')
-        let doc = u('<div>').html(html)
-        let item = u('<li>')
-        let tapestyle = doc.find('header').attr('style')
-        if (tapestyle)
-          item.attr('style', tapestyle)
-        ol.append(item.append(u('<a>').
-          attr('href', url).append(doc.find('h1').text())))
+        dat.readFile('/index.html').then(html => {
+          let doc = u('<div>').html(html)
+          if (checkAccess && cat === 'discovered' &&
+              doc.find('meta[name="access"]').attr('content') !== 'public') {
+            removeTape(cat, url)
+            return
+          }
+
+          let item = u('<li>')
+          let tapestyle = doc.find('header').attr('style')
+          let fave = u('<a class="star" href="#">&#x2605;</a>')
+          if (tapestyle)
+            item.attr('style', tapestyle)
+          ol.append(item.append(fave).append(u('<a>').
+            attr('href', url).append(doc.find('h1').text())))
+          fave.on('click', e => {
+            e.preventDefault()
+            e.stopPropagation()
+            let c = u(e.currentTarget)
+            let olc = c.closest('ol')
+            let moveFrom = (olc.is('.favorites') ? 'favorites' : 'discovered')
+            let moveTo = (olc.is('.favorites') ? 'discovered' : 'favorites')
+            u('ol.' + moveTo).prepend(c.closest('li').remove())
+            duxtapes[moveTo].push(url)
+            removeTape(moveFrom, url)
+          })
+        })
       }
     }
   }
@@ -91,12 +119,11 @@
       addTapes('discovered', add.map(x => decodeURIComponent(x.slice(4))))
     } else {
       // Build the list of your tapes.
-      u('#content').append('<ol class="favorites tapes"></ol>')
-      if (duxtapes.discovered.length > 0) {
-        u('#content').append("<h3>Mixtapes you've discovered:</h3>" +
-          '<ol class="discovered tapes"></ol>')
-      }
-      ['favorites', 'discovered'].forEach(displayTapes)
+      u('#content').append('<ol class="favorites tapes"></ol>' +
+        "<h3>Mixtapes you've discovered:</h3>" +
+          '<ol class="discovered tapes"></ol>');
+
+      ['favorites', 'discovered'].forEach(x => displayTapes(x, duxtapes[x], false))
     }
   })
 })()

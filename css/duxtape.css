@@ -142,12 +142,18 @@ header .editing {
   white-space:nowrap;
 }
 
+#access {
+  float: right;
+}
+
 #publish {
   color: #C09;
   background-color: #3C9;
-  float: right;
   font-size: 1.6rem;
   padding: 8px 14px;
+  display: block;
+  margin-top: 6px;
+  margin-left: 50px;
 }
 
 #publish:disabled,

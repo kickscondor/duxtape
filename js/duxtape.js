@@ -370,8 +370,11 @@ function colorPicker(sel, cls, col, fn) {
       // Add the instruction pane.
       u('main li.song').on('dragover', dragOver).
         on('dragstart', dragStart).on('dragend', dragEnd)
+      let isPublic = (u('meta[name="duxtape:access"]').attr('content') === 'public')
       u('main').append('<div class="editor file-form">' + 
-        '<button id="publish" type="button" disabled>Publish</button>' +
+        '<div id="access"><input type="checkbox" id="accessbox"' + (isPublic ? ' checked' : '') +
+        '> <label for="accessbox">Make this public</label>' +
+        '<button id="publish" type="button" disabled>Publish</button></div>' +
         '<p>How to create your duxtape:</p>' +
         '<ul><li>Drop music files onto this page or use this: ' +
         '<input type="file" id="musicfile" name="musicfile" accept="audio/*" multiple="multiple">' +
@@ -388,6 +391,17 @@ function colorPicker(sel, cls, col, fn) {
         await writeAllChanges()
         publish.disabled = true
         u("#publishing").attr('style', 'display: none')
+      })
+      u('#accessbox').on('change', function (ev) {
+        let meta = u('meta[name="duxtape:access"]')
+        if (ev.currentTarget.checked) {
+          if (meta.length == 0) {
+            u('head').append('<meta name="duxtape:access" content="public">')
+          }
+        } else {
+          meta.remove()
+        }
+        markToPublish()
       })
       let musicfile = u('#musicfile')
       musicfile.on('change', async function (ev) {
