@@ -81,7 +81,7 @@
         dat.readFile('/index.html').then(html => {
           let doc = u('<div>').html(html)
           if (checkAccess && cat === 'discovered' &&
-              doc.find('meta[name="access"]').attr('content') !== 'public') {
+              doc.find('meta[name="duxtape:access"]').attr('content') !== 'public') {
             removeTape(cat, url)
             return
           }
