@@ -382,15 +382,15 @@ function colorPicker(sel, cls, col, fn) {
         'to order them.</li><li>Style the page by editing the title and color above.</li>' +
         '<li>A <strong>Publish</strong> button will appear to the right&mdash;click that to save your changes.</li></ul>' +
         "<p>That's it! Share and seed your tape with others.</p>" +
-        '<div id="publishing"><p>PUBLISHING</p><img src="' + duxHome + '/images/ripple.svg"></div>')
+        '<div id="overlay"><p></p><img src="' + duxHome + '/images/ripple.svg"></div>')
 
       // Publishing and uploading buttons in the instruction pane.
       let publish = document.getElementById('publish')
       u(publish).on('click', async function (ev) {
-        u("#publishing").attr('style', 'display: block')
+        u("#overlay").addClass('publishing')
         await writeAllChanges()
         publish.disabled = true
-        u("#publishing").attr('style', 'display: none')
+        u("#overlay").removeClass('publishing')
       })
       u('#accessbox').on('change', function (ev) {
         let meta = u('meta[name="duxtape:access"]')

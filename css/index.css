@@ -58,6 +58,11 @@ ol.tapes {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+ol.tapes:empty {
+  background-color: #eee;
+  padding: 20px;
+}
+
 ol.tapes li {
   padding: 8px;
   background-color: #f90;

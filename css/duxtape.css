@@ -161,17 +161,34 @@ header .editing {
   display: none;
 }
 
-#publishing {
+#overlay {
   display: none;
+  position: fixed;
   text-align: center;
   font-size: 2rem;
   color: white;
   font-weight: bold;
-  background-color: #0C9;
-  position: absolute;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   top: 0;
   left: 0;
-  padding-top: 40%;
+  padding-top: 40vh;
+  overflow: hidden;
+}
+
+#overlay.adding {
+  display: block;
+  background-color: #0AE;
+}
+
+.adding p:after {
+  content: "ADDING SONGS";
+}
+#overlay.publishing {
+  display: block;
+  background-color: #0C9;
+}
+
+.publishing p:after {
+  content: "PUBLISHING";
 }
