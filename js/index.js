@@ -60,7 +60,7 @@
     // Write the tape's home page.
     let tape = await DatArchive.create({type: ["duxtape"],
       description: "A Duxtape."})
-    let archive = await DatArchive.load(window.location)
+    let archive = new DatArchive(window.location)
     let html = await archive.readFile('tape.html')
     html2 = html.replace(/="\//g, '="' + archive.url + '/')
     await tape.writeFile('index.html', html2)
@@ -79,7 +79,7 @@
     while (i--) {
       let url = ary[i]
       if (ol.find('a[href="' + url + '"]').length == 0) {
-        let dat = await DatArchive.load(url)
+        let dat = new DatArchive(url)
         dat.getInfo().then(info => {
           if (checkAccess && !info.isOwner && (info.peers == 0 || !info.type.includes("duxtape")))
             return
@@ -98,7 +98,8 @@
             if (tapestyle)
               item.attr('style', tapestyle)
             ol.append(item.append(fave).append(u('<a>').
-              attr('href', url).append(doc.find('h1').text())))
+              attr('href', url).append(doc.find('h1').text())).
+              append(u('<span>').text(info.peers + " peers")))
             fave.on('click', e => {
               e.preventDefault()
               e.stopPropagation()

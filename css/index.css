@@ -74,6 +74,12 @@ ol.tapes li a {
   font-weight: bold;
 }
 
+ol.tapes span {
+  color: white;
+  font-size: .9rem;
+  padding-left: 8px;
+}
+
 ol.tapes .star {
   margin-right: 8px;
   font-size: 1.2rem;
