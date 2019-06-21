@@ -48,7 +48,7 @@
     })
     experimental.datPeers.addEventListener('message', ({peer, message}) => {
       if (message && message.tapes && message.tapes.length > 0) {
-        displayTapes('discovered', addTapes('discovered', message.tapes), true)
+        displayTapes('discovered', addTapes('discovered', message.tapes))
       }
     })
   }
@@ -60,7 +60,7 @@
     // Write the tape's home page.
     let tape = await DatArchive.create({type: ["duxtape"],
       description: "A Duxtape."})
-    let archive = new DatArchive(window.location)
+    let archive = await DatArchive.load(window.location)
     let html = await archive.readFile('tape.html')
     html2 = html.replace(/="\//g, '="' + archive.url + '/')
     await tape.writeFile('index.html', html2)
@@ -72,19 +72,20 @@
     window.location = tape.url
   }
 
-  async function displayTapes(cat, ary, checkAccess) {
+  async function displayTapes(cat, ary) {
     let ol = u('ol.' + cat)
     let i = ary.length
+    let checkAccess = (cat === 'discovered')
     while (i--) {
       let url = ary[i]
       if (ol.find('a[href="' + url + '"]').length == 0) {
-        let dat = new DatArchive(url)
+        let dat = await DatArchive.load(url)
         dat.getInfo().then(info => {
-          if (!info.isOwner && (info.peers == 0 || !info.type.includes("duxtape")))
+          if (checkAccess && !info.isOwner && (info.peers == 0 || !info.type.includes("duxtape")))
             return
           dat.readFile('/index.html').then(html => {
             let doc = u('<div>').html(html)
-            if (checkAccess && cat === 'discovered' &&
+            if (checkAccess &&
                 (doc.find('li.song').length == 0 ||
                  doc.find('meta[name="duxtape:access"]').attr('content') !== 'public')) {
               removeTape(cat, url)
@@ -130,7 +131,7 @@
         "<h3>Mixtapes you've discovered:</h3>" +
           '<ol class="discovered tapes"></ol>');
 
-      ['favorites', 'discovered'].forEach(x => displayTapes(x, duxtapes[x], false))
+      ['favorites', 'discovered'].forEach(x => displayTapes(x, duxtapes[x]))
     }
   })
 })()
