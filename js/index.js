@@ -41,7 +41,7 @@
   }
 
   // Advertise my tapes to connected peers.
-  if (experimental) {
+  if (typeof(experimental) !== 'undefined') {
     experimental.datPeers.broadcast({tapes: Object.keys(allTapes)})
     experimental.datPeers.addEventListener('connect', ({peer}) => {
       peer.send({tapes: Object.keys(allTapes)})
@@ -79,32 +79,37 @@
       let url = ary[i]
       if (ol.find('a[href="' + url + '"]').length == 0) {
         let dat = new DatArchive(url)
-        dat.readFile('/index.html').then(html => {
-          let doc = u('<div>').html(html)
-          if (checkAccess && cat === 'discovered' &&
-              doc.find('meta[name="duxtape:access"]').attr('content') !== 'public') {
-            removeTape(cat, url)
+        dat.getInfo().then(info => {
+          if (!info.isOwner && (info.peers == 0 || !info.type.includes("duxtape")))
             return
-          }
+          dat.readFile('/index.html').then(html => {
+            let doc = u('<div>').html(html)
+            if (checkAccess && cat === 'discovered' &&
+                (doc.find('li.song').length == 0 ||
+                 doc.find('meta[name="duxtape:access"]').attr('content') !== 'public')) {
+              removeTape(cat, url)
+              return
+            }
 
-          let item = u('<li>')
-          let tapestyle = doc.find('header').attr('style')
-          let fave = u('<a class="star" href="#">&#x2605;</a>')
-          if (tapestyle)
-            item.attr('style', tapestyle)
-          ol.append(item.append(fave).append(u('<a>').
-            attr('href', url).append(doc.find('h1').text())))
-          fave.on('click', e => {
-            e.preventDefault()
-            e.stopPropagation()
-            let c = u(e.currentTarget)
-            let olc = c.closest('ol')
-            let moveFrom = (olc.is('.favorites') ? 'favorites' : 'discovered')
-            let moveTo = (olc.is('.favorites') ? 'discovered' : 'favorites')
-            u('ol.' + moveTo).prepend(c.closest('li').remove())
-            duxtapes[moveTo].push(url)
-            removeTape(moveFrom, url)
-            allTapes[url] = (moveTo === 'favorites')
+            let item = u('<li>')
+            let tapestyle = doc.find('header').attr('style')
+            let fave = u('<a class="star" href="#">&#x2605;</a>')
+            if (tapestyle)
+              item.attr('style', tapestyle)
+            ol.append(item.append(fave).append(u('<a>').
+              attr('href', url).append(doc.find('h1').text())))
+            fave.on('click', e => {
+              e.preventDefault()
+              e.stopPropagation()
+              let c = u(e.currentTarget)
+              let olc = c.closest('ol')
+              let moveFrom = (olc.is('.favorites') ? 'favorites' : 'discovered')
+              let moveTo = (olc.is('.favorites') ? 'discovered' : 'favorites')
+              u('ol.' + moveTo).prepend(c.closest('li').remove())
+              duxtapes[moveTo].push(url)
+              removeTape(moveFrom, url)
+              allTapes[url] = (moveTo === 'favorites')
+            })
           })
         })
       }

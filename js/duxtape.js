@@ -49,29 +49,38 @@ function playMusic(link) {
     prepend('<div class="progress"><div></div></div>')
 }
 
-function stopMusic() {
+function stopMusic(shouldPause) {
   // Stop audio player.
+  let playing = u('main li.playing')
   let player = document.getElementById('player')
-  player.removeAttribute('src')
-  player.pause()
+  if (shouldPause && player.paused)
+    player.play()
+  else if (!player.paused)
+    player.pause()
 
-  // Turn off visual style on the song.
-  let playing = u('main li.playing').removeClass('playing')
-  playing.children('.progress').remove()
+  if (!shouldPause) {
+    // Turn off visual style on the song.
+    player.removeAttribute('src')
+    playing.removeClass('playing')
+    playing.children('.progress').remove()
+  }
+
   return playing
 }
 
 function onPlay(e) {
   e.preventDefault()
   e.stopPropagation()
-  var lastItem = stopMusic()
+  var lastItem = stopMusic(true)
   var lastLink = lastItem.find('h3 a').first()
-  if (lastLink !== e.currentTarget && e.currentTarget.className !== "editing")
+  if (lastLink !== e.currentTarget && e.currentTarget.className !== "editing") {
+    stopMusic(false)
     playMusic(e.currentTarget)
+  }
 }
 
 function onPlayNext(e) {
-  var lastItem = stopMusic()
+  var lastItem = stopMusic(false)
   var nextItem = lastItem.first().nextElementSibling
   if (!nextItem) return
   playMusic(u('h3 a', nextItem).first())
@@ -277,7 +286,7 @@ function colorPicker(sel, cls, col, fn) {
     let mm = require('music-metadata-browser')
     let count = files.length
     if (count > 0) {
-      stopMusic()
+      stopMusic(true)
       for (let i = 0; i < count; i++) {
         let file = files[i]
         if (!file.type.match('audio/.*'))
