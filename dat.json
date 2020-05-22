@@ -1,7 +1,0 @@
-{
-  "title": "Duxtape",
-  "description": "Simple mixtapes for the Dat network.",
-  "experimental": {
-    "apis": ["datPeers"]
-  }
-}

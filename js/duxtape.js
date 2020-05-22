@@ -181,7 +181,7 @@ function colorPicker(sel, cls, col, fn) {
 // Actual logic for this app starts here.
 //
 (async function () {
-  let archive = new DatArchive(window.location),
+  let archive = beaker.hyperdrive.drive(window.location),
     newFiles = [], delFiles = []
  
   async function addWrite(dat, path, str) {
@@ -342,7 +342,7 @@ function colorPicker(sel, cls, col, fn) {
     }
 
     // Add editor controls, if this person owns the tape.
-    if (archiveInfo.isOwner) {
+    if (archiveInfo.writable) {
       addSongEdit(duxHome, u('li.song'))
       u('head').append(u('<link>').attr(
         {rel: 'stylesheet', type: 'text/css', href: duxHome + '/css/pickr.css', class: 'editor'}))

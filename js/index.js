@@ -23,7 +23,7 @@
   function addTapes(cat, urls) {
     ary = []
     urls.forEach(addurl => {
-      if (addurl.startsWith('dat://') && checkTape(cat, addurl)) {
+      if (addurl.startsWith('hyper://') && checkTape(cat, addurl)) {
         duxtapes[cat].push(addurl)
         ary.push(addurl)
       }
@@ -40,27 +40,32 @@
     saveTapes()
   }
 
-  // Advertise my tapes to connected peers.
-  if (typeof(experimental) !== 'undefined') {
-    experimental.datPeers.broadcast({tapes: Object.keys(allTapes)})
-    experimental.datPeers.addEventListener('connect', ({peer}) => {
-      peer.send({tapes: Object.keys(allTapes)})
-    })
-    experimental.datPeers.addEventListener('message', ({peer, message}) => {
-      if (message && message.tapes && message.tapes.length > 0) {
-        displayTapes('discovered', addTapes('discovered', message.tapes))
-      }
-    })
-  }
+  // Receive messages from other connected peers.
+  var channel = beaker.peersockets.join('duxtape')
+  channel.addEventListener('message', ({peerId, message}) => {
+    let tapes = JSON.parse(new TestDecoder().decode(message))
+    displayTapes('discovered', addTapes('discovered', tapes))
+  })
+
+  // Advertise my tapes to connected peers. (Will send to currently
+  // joined AND any future peers.)
+  // https://docs.beakerbrowser.com/apis/beaker.peersockets#beaker-peersockets-watch
+  var peers = beaker.peersockets.watch()
+  peers.addEventListener('join', ({peerId}) => {
+    channel.send(peerId, {tapes: Object.keys(allTapes)})
+  })
+
+  // TODO: I'd like to use beaker.hyperdrive.drive(url).watch(path) to detect changes
+  // to a JSON file that could also contain tapes. This way seeded files could also
+  // propagate tapes even if Beaker isn't seeding it.
 
   async function onCreateTape (e) {
     e.preventDefault()
     e.stopPropagation()
 
     // Write the tape's home page.
-    let tape = await DatArchive.create({type: ["duxtape"],
-      description: "A Duxtape."})
-    let archive = new DatArchive(window.location)
+    let tape = await beaker.hyperdrive.createDrive({title: "A Duxtape."})
+    let archive = await beaker.hyperdrive.drive(window.location)
     let html = await archive.readFile('tape.html')
     html2 = html.replace(/="\//g, '="' + archive.url + '/')
     await tape.writeFile('index.html', html2)
@@ -79,14 +84,16 @@
     while (i--) {
       let url = ary[i]
       if (ol.find('a[href="' + url + '"]').length == 0) {
-        let dat = new DatArchive(url)
-        dat.getInfo().then(info => {
-          if (checkAccess && !info.isOwner && (info.peers == 0 || !info.type.includes("duxtape")))
-            return
+        let dat = await beaker.hyperdrive.drive(url)
+        // dat.getInfo().then(info => {
+          // TODO: Get info.peers - info.writable is definitely there.
+          // if (checkAccess && !info.writable && (info.peers == 0 || !info.type.includes("duxtape")))
+          //   return
           dat.readFile('/index.html').then(html => {
             let doc = u('<div>').html(html)
             if (checkAccess &&
                 (doc.find('li.song').length == 0 ||
+                 doc.find('meta[name="generator"]').attr('content') !== 'Duxtape' ||
                  doc.find('meta[name="duxtape:access"]').attr('content') !== 'public')) {
               removeTape(cat, url)
               return
@@ -98,8 +105,9 @@
             if (tapestyle)
               item.attr('style', tapestyle)
             ol.append(item.append(fave).append(u('<a>').
-              attr('href', url).append(doc.find('h1').text())).
-              append(u('<span>').text(info.peers + " peers")))
+              attr('href', url).append(doc.find('h1').text()))
+              // .append(u('<span>').text(info.peers + " peers"))
+            )
             fave.on('click', e => {
               e.preventDefault()
               e.stopPropagation()
@@ -113,7 +121,7 @@
               allTapes[url] = (moveTo === 'favorites')
             })
           })
-        })
+        // })
       }
     }
   }
