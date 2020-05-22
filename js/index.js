@@ -64,7 +64,7 @@
     e.stopPropagation()
 
     // Write the tape's home page.
-    let tape = await beaker.hyperdrive.createDrive({title: "A Duxtape."})
+    let tape = await beaker.hyperdrive.createDrive({description: "A Duxtape."})
     let archive = await beaker.hyperdrive.drive(window.location)
     let html = await archive.readFile('tape.html')
     html2 = html.replace(/="\//g, '="' + archive.url + '/')
