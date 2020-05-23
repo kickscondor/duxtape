@@ -16,6 +16,11 @@ header:after {
   clear: both;
 }
 
+h3 span {
+  font-size: 0.9em;
+  font-weight: normal;
+}
+
 #tapeimg img {
   max-width: 80%;
   margin: 40px;
@@ -78,6 +83,15 @@ ol.tapes span {
   color: white;
   font-size: .9rem;
   padding-left: 8px;
+}
+
+ol.tapes .attr {
+  text-transform: uppercase;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
 }
 
 ol.tapes .star {

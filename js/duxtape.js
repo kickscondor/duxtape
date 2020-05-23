@@ -221,8 +221,10 @@ function colorPicker(sel, cls, col, fn) {
     let doc = u(document.documentElement).clone()
     let newTitle = doc.find('.tape-title').text()
     let info = await archive.getInfo()
-    if (info.title !== newTitle)
+    if (info.title !== newTitle) {
+      u('title').text(newTitle + ' on Duxtape')
       archive.configure({title: newTitle})
+    }
 
     doc.find('.editor').remove()
     doc.find('.editing').removeClass('editing').
@@ -338,6 +340,7 @@ function colorPicker(sel, cls, col, fn) {
     let archiveInfo = await archive.getInfo()
     let h1 = document.querySelector('h1')
     if (h1.innerText == "MUXTAPE by SOMEONE") {
+      u('title').text(archiveInfo.title + ' on Duxtape')
       h1.querySelector('.tape-title').innerText = archiveInfo.title
     }
 

@@ -43,7 +43,7 @@
   // Receive messages from other connected peers.
   var channel = beaker.peersockets.join('duxtape')
   channel.addEventListener('message', ({peerId, message}) => {
-    let tapes = JSON.parse(new TestDecoder().decode(message))
+    let {tapes} = JSON.parse(new TextDecoder().decode(message))
     displayTapes('discovered', addTapes('discovered', tapes))
   })
 
@@ -52,7 +52,8 @@
   // https://docs.beakerbrowser.com/apis/beaker.peersockets#beaker-peersockets-watch
   var peers = beaker.peersockets.watch()
   peers.addEventListener('join', ({peerId}) => {
-    channel.send(peerId, {tapes: Object.keys(allTapes)})
+    let msg = JSON.stringify({tapes: Object.keys(allTapes)})
+    channel.send(peerId, new TextEncoder('utf-8').encode(msg))
   })
 
   // TODO: I'd like to use beaker.hyperdrive.drive(url).watch(path) to detect changes
@@ -85,16 +86,16 @@
       let url = ary[i]
       if (ol.find('a[href="' + url + '"]').length == 0) {
         let dat = await beaker.hyperdrive.drive(url)
-        // dat.getInfo().then(info => {
-          // TODO: Get info.peers - info.writable is definitely there.
-          // if (checkAccess && !info.writable && (info.peers == 0 || !info.type.includes("duxtape")))
-          //   return
+        dat.getInfo().then(info => {
+          if (checkAccess && !info.writable && info.peers == 0)
+            return
           dat.readFile('/index.html').then(html => {
             let doc = u('<div>').html(html)
+            let priv = doc.find('meta[name="duxtape:access"]').attr('content') !== 'public'
             if (checkAccess &&
                 (doc.find('li.song').length == 0 ||
                  doc.find('meta[name="generator"]').attr('content') !== 'Duxtape' ||
-                 doc.find('meta[name="duxtape:access"]').attr('content') !== 'public')) {
+                 priv)) {
               removeTape(cat, url)
               return
             }
@@ -105,9 +106,9 @@
             if (tapestyle)
               item.attr('style', tapestyle)
             ol.append(item.append(fave).append(u('<a>').
-              attr('href', url).append(doc.find('h1').text()))
-              // .append(u('<span>').text(info.peers + " peers"))
-            )
+              attr('href', url).append(doc.find('h1').text()).
+              append(priv ? '<span class="attr">private</span>' :
+                u('<span>').text(info.peers + " peers"))))
             fave.on('click', e => {
               e.preventDefault()
               e.stopPropagation()
@@ -121,7 +122,7 @@
               allTapes[url] = (moveTo === 'favorites')
             })
           })
-        // })
+        })
       }
     }
   }
@@ -137,7 +138,8 @@
     } else {
       // Build the list of your tapes.
       u('#content').append('<ol class="favorites tapes"></ol>' +
-        "<h3>Mixtapes you've discovered:</h3>" +
+        "<h3>Mixtapes you've discovered:<br>" +
+        "<span>(Only public tapes that contain at least one song will be shown.)</h3>" +
           '<ol class="discovered tapes"></ol>');
 
       ['favorites', 'discovered'].forEach(x => displayTapes(x, duxtapes[x]))
