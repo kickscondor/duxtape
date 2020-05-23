@@ -5,7 +5,11 @@ Mere nostalgia, let's say.
 
 ![Screenshot](/duxtape.png)
 
-To try it out, visit dat://duxtape.kickscondor.com/.
+To try it out... well, it's down right now. I am waiting for [this
+bug](https://github.com/beakerbrowser/beaker/issues/1560) in Beaker. Everything
+else has been updated to work as of May 2020. Just need audio to play!
+
+- - -
 
 If you don't know what Muxtape was, it was a short-lived website for sharing
 mp3 mix tapes. Its design was absolutely bare: just the songs you uploaded.
@@ -13,7 +17,7 @@ But it functioned. You could create and listen to mixtapes in the browser.
 It was shuttered within the year and made an attempt to return... don't recall
 what happened next.
 
-Dat seems perfect for this kind of thing. Not only could you seed the mixtapes
+Hypercore seems perfect for this kind of thing. Not only could you seed the mixtapes
 that are shared, but you can seed the app itself!
 
 Here's the tech behind it:
@@ -30,9 +34,8 @@ Here's the tech behind it:
   API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API):
   This is one thing we didn't have back in 2008. I appreciate this.
 
-A sample mixtape is at:
-dat://8587f38ad142911bbf29caffe6887080be3c3ff55569be03bacc197c5daa9caa/.
+A sample mixtape is at: *LINK REMOVED*.
 To seed the tape on the network, click the sideways-V 'network' icon in the
-browser address bar. You should fine a toggle.
+browser address bar. You should find a toggle there.
 
 You currently can only edit the tape from the browser where it was created.
