@@ -37,11 +37,19 @@ function updateTape(songs, duration) {
   durEle.innerText = songDuration(duration + parseDuration(durEle.innerText))
 }
 
-function playMusic(link) {
+async function playMusic(link) {
   // Start audio player.
   let player = document.getElementById('player')
-  player.src = link.newFile ?
-    window.URL.createObjectURL(link.newFile) : link.href
+  let blob = link.newFile
+  if (!blob) {
+    let buf = await beaker.hyperdrive.readFile(link.href, {encoding: 'binary'})
+    let type = 'audio/mp3', match = link.href.match(/\.(\w+)$/)
+    if (match !== null) {
+      type = `audio/${match[1]}`
+    }
+    blob = new Blob([buf], {type})
+  }
+  player.src = window.URL.createObjectURL(blob)
   player.play()
 
   // Turn on visual style on the song.
@@ -222,7 +230,7 @@ function colorPicker(sel, cls, col, fn) {
     let newTitle = doc.find('.tape-title').text()
     let info = await archive.getInfo()
     if (info.title !== newTitle) {
-      u('title').text(newTitle + ' on Duxtape')
+      doc.find('title').text(newTitle + ' on Duxtape')
       archive.configure({title: newTitle})
     }
 
