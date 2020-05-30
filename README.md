@@ -6,7 +6,7 @@ Mere nostalgia, let's say.
 ![Screenshot](/duxtape.png)
 
 To try it out, visit this url in Beaker:
-[hyper://5b6920..e0/](hyper://5b69209fc2dfb5eafb82e4031cd43c28ebc61e5cdd4dbdc48310bb62263f53e0/).
+hyper://5b69209fc2dfb5eafb82e4031cd43c28ebc61e5cdd4dbdc48310bb62263f53e0/.
 
 - - -
 
@@ -34,7 +34,7 @@ Here's the tech behind it:
   This is one thing we didn't have back in 2008. I appreciate this.
 
 A sample mixtape is at:
-[hyper://61477c..1c/](hyper://61477c44215c195bb5514cf6dcca86f4f4784822dbc24a6f944aa68cfc021e1c/)
+hyper://61477c44215c195bb5514cf6dcca86f4f4784822dbc24a6f944aa68cfc021e1c/.
 To seed the tape on the network, click the sideways-V 'network' icon in the
 browser address bar. You should find a toggle there.
 
