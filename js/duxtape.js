@@ -38,23 +38,30 @@ function updateTape(songs, duration) {
 }
 
 async function playMusic(link) {
-  // Start audio player.
+  // Get audio details.
   let player = document.getElementById('player')
   let blob = link.newFile
-  if (!blob) {
-    let buf = await beaker.hyperdrive.readFile(link.href, {encoding: 'binary'})
-    let type = 'audio/mp3', match = link.href.match(/\.(\w+)$/)
-    if (match !== null) {
-      type = `audio/${match[1]}`
-    }
-    blob = new Blob([buf], {type})
-  }
-  player.src = window.URL.createObjectURL(blob)
-  player.play()
 
   // Turn on visual style on the song.
   u(link).parent().parent().addClass('playing').
     prepend('<div class="progress"><div></div></div>')
+
+  // Load and play the song.
+  if (!blob) {
+    let buf = await beaker.hyperdrive.readFile(link.href, {encoding: 'binary'})
+    let type = 'audio/mp3', match = link.href.match(/\.(\w+)$/)
+    if (match !== null) {
+      if (match[1] === 'm4a') {
+        type = 'audio/x-m4a'
+      } else {
+        type = `audio/${match[1]}`
+      }
+    }
+    blob = new Blob([buf], {type})
+  }
+
+  player.src = window.URL.createObjectURL(blob)
+  player.play()
 }
 
 function stopMusic(shouldPause) {
@@ -332,6 +339,7 @@ function colorPicker(sel, cls, col, fn) {
             song.on('dragend', dragEnd)
 
             link.first().newFile = file
+            path = path.replace(/\s+/g, '').replace(/[^\.\w]/g, '-')
             newFiles.push({path: path, data: reader.result})
             markToPublish()
           })

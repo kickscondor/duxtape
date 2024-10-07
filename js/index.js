@@ -1,5 +1,6 @@
 /* Thank you to Tara Vancil -- I am ripping off her 'dat-photos-app' here. */
 (async function () {
+  let allTapes = {}
   let duxtapes = {favorites: [], discovered: []}
   let duxdata = window.localStorage.getItem('duxtapes')
   if (duxdata)
@@ -9,18 +10,14 @@
     window.localStorage.setItem('duxtapes', JSON.stringify(duxtapes))
   }
 
-  let allTapes = {}
   function checkTape(cat, addurl) {
     if (addurl in allTapes)
       return false
     allTapes[addurl] = (cat === 'favorites')
     return true
   }
-  ['discovered', 'favorites'].forEach(cat => duxtapes[cat].filter(url => checkTape(cat, url)))
-  duxtapes.discovered = duxtapes.discovered.slice(-40)
-  saveTapes()
 
-  function addTapes(cat, urls) {
+  function addTapes(cat, urls, save = true) {
     ary = []
     urls.forEach(addurl => {
       if (addurl.startsWith('hyper://') && checkTape(cat, addurl)) {
@@ -28,7 +25,9 @@
         ary.push(addurl)
       }
     })
-    saveTapes()
+    if (save) {
+      saveTapes()
+    }
     return ary
   }
 
@@ -40,9 +39,19 @@
     saveTapes()
   }
 
+  ['discovered', 'favorites'].forEach(cat => duxtapes[cat].filter(url => checkTape(cat, url)))
+  try {
+    let text = await beaker.hyperdrive.readFile('/duxtape.json')
+    let tapesList = Object.keys(JSON.parse(text).discovered)
+    addTapes('discovered', tapesList, false)
+  } catch {}
+  duxtapes.discovered = duxtapes.discovered.slice(-40)
+  saveTapes()
+
   // Receive messages from other connected peers.
   var channel = beaker.peersockets.join('duxtape')
   channel.addEventListener('message', ({peerId, message}) => {
+    console.log(['message', peerId, message])
     let {tapes} = JSON.parse(new TextDecoder().decode(message))
     displayTapes('discovered', addTapes('discovered', tapes))
   })
@@ -52,6 +61,7 @@
   // https://docs.beakerbrowser.com/apis/beaker.peersockets#beaker-peersockets-watch
   var peers = beaker.peersockets.watch()
   peers.addEventListener('join', ({peerId}) => {
+    console.log(['join', peerId])
     let msg = JSON.stringify({tapes: Object.keys(allTapes)})
     channel.send(peerId, new TextEncoder('utf-8').encode(msg))
   })

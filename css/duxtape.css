@@ -37,6 +37,10 @@ h1 {
   font-size: 1.2rem;
 }
 
+h1 a {
+  color: white;
+}
+
 h2 {
   font-size: .8rem;
   margin: 2px 8px;
